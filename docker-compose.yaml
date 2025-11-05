@@ -1,0 +1,28 @@
+services:
+  # Serviço do Banco de Dados MariaDB
+  db:
+    image: mariadb:lts # Usando a versão de Long-Term Support
+    container_name: prontuario_db_container
+    restart: always # Tenta reiniciar automaticamente se falhar
+
+    # Variáveis de ambiente: Cruciais para configurar o MariaDB
+    environment:
+      # Credenciais para o usuário 'root' (administrador)
+      MARIADB_ROOT_PASSWORD: password
+      # Variáveis para o seu banco de dados e usuário do Laravel
+      MARIADB_DATABASE: prontuario_db
+      MARIADB_USER: jedi
+      MARIADB_PASSWORD: jedi_password
+
+    # Mapeamento de portas
+    ports:
+      - "3306:3306"
+
+    # Volumes: Garante que os dados sejam permanentes, mesmo após o container ser destruído
+    volumes:
+      - db_data:/var/lib/mysql
+
+# Volumes que garantem a persistência dos dados
+volumes:
+  db_data:
+    driver: local
