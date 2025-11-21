@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -10,9 +11,13 @@ class Appointment extends Model
     use HasFactory;
 
     protected $fillable = [
+        'user_id',
+        'patient_id',
         'scheduled_at',
+        'start_date',
+        'end_date',
         'status',
-        'notes'
+        'notes',
     ];
 
     protected $casts = [

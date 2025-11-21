@@ -17,7 +17,12 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
 
-        User::factory(8)->create();
-        Patient::factory(8)->create();
+        // 1. Cria os 2 usuários terapeutas
+        $users = User::factory(2)->create();
+
+        // 2. Para cada usuário, cria 2 pacientes associados a ele.
+        $users->each(function ($user) {
+            Patient::factory(2)->create(['user_id' => $user->id]);
+        });
     }
 }

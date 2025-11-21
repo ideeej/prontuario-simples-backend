@@ -2,15 +2,16 @@
 
 namespace Database\Factories;
 
-use Illuminate\Database\Eloquent\Factories\Factory;
+use App\Models\User;
 use Faker\Factory as Faker;
+use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Support\Str;
 
 /**
  * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Patient>
  */
 class PatientFactory extends Factory
 {
-
     /**
      * Define the model's default state.
      *
@@ -19,14 +20,17 @@ class PatientFactory extends Factory
     public function definition(): array
     {
         $faker = Faker::create('pt_BR');
+        $name = fake()->name();
 
         return [
-            'name' => fake()->name(),
+            'user_id' => User::factory(),
+            'name' => $name,
+            'username' => Str::slug($name, '-'),
             'email' => fake()->email(),
-            'cpf' => $faker->cpf(),
+            'document' => $faker->cpf(),
             'birth_date' => fake()->date(),
             'address' => fake()->address(),
-            'phone_number' => fake()->phoneNumber()
+            'phone_number' => fake()->phoneNumber(),
         ];
     }
 }

@@ -2,12 +2,16 @@
 
 namespace App\Http\Controllers;
 
-use Exception;
+use App\Http\Requests\LoginUserRequest;
 use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
+use App\Http\Resources\UserResource;
 use App\Models\User;
+use Exception;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Laravel\Sanctum\PersonalAccessToken;
 
 class UserController extends Controller
 {
@@ -16,12 +20,7 @@ class UserController extends Controller
      */
     public function index(Request $request)
     {
-
-        $currentPage = $request->get('current_page') ?? 1;
-        $regsPerPage = 3;
-        $skip = ($currentPage -1 ) * $regsPerPage;
-
-        $users = User::skip($skip)->take($regsPerPage)->orderByDesc('id')->get();
+        $users = User::orderByDesc('created_at')->paginate(10);
 
         return response()->json($users->toResourceCollection(), 200);
     }
@@ -32,14 +31,13 @@ class UserController extends Controller
     public function store(StoreUserRequest $request)
     {
         $data = $request->validated();
+        $data['password'] = Hash::make($data['password']);
         try {
-            $user = new User();
-            $user->fill($data);
-            $user->password = Hash::make(value: 123);
-            $user->save();
+            $user = User::create(attributes: $data);
+
             return response()->json($user->toResource(), 201);
 
-        } catch(Exception $e) {
+        } catch (Exception $e) {
             return response()->json(['message' => 'Falha ao inserir o usuário'], 400);
         }
     }
@@ -49,12 +47,9 @@ class UserController extends Controller
      */
     public function show(string $id)
     {
-        try {
-            $user = User::findOrFail($id);
-            return response()->json($user->toResource(), 200);
-        } catch(\Exception $e) {
-            return response()->json(['message' => 'Usuário não encontrado.'], 404);
-        }
+        $user = User::findOrFail($id);
+
+        return new UserResource($user);
 
     }
 
@@ -63,16 +58,17 @@ class UserController extends Controller
      */
     public function update(UpdateUserRequest $request, string $id)
     {
+        $user = User::findOrFail($id);
         $data = $request->validated();
 
-        try {
-            $user = User::findOrFail($id);
-            $user->update(attributes: $data);
-            return response()->json($user->toResource(), 200);
-
-        } catch(Exception $e) {
-            return response()->json(['message' => 'Falha ao atualizar o usuário'], 400);
+        if (isset($data['password'])) {
+            $data['password'] = Hash::make($data['password']);
         }
+
+        $user->update(attributes: $data);
+
+        return new UserResource($user);
+
     }
 
     /**
@@ -80,16 +76,45 @@ class UserController extends Controller
      */
     public function destroy(string $id)
     {
-        try {
+        $user = User::findOrFail($id);
+        $user->delete();
 
-            $removed = User::destroy($id);
-            if(!$removed) {
-                throw new Exception();
-            }
-            return response()->json(null, 204);
+        return response()->json(null, 204);
+    }
 
-        } catch(Exception $e) {
-            return response()->json(['message' => 'Falha ao remover o usuário'], 400);
+    public function login(LoginUserRequest $request): JsonResponse
+    {
+        $data = $request->validated();
+        $user = User::where('email', $data['email'])->firstOrFail();
+
+        if (! $user || ! Hash::check($data['password'], $user->password)) {
+            return response()->json(['message' => 'Credenciais inválidas.'], 401);
         }
+
+        // $user->tokens()->delete();
+
+        $token = $user->createToken('auth_token')->plainTextToken;
+
+        return response()->json([
+            'user' => $user->toResource(),
+            'access_token' => $token,
+            'token_type' => 'Bearer',
+        ], 200);
+    }
+
+    public function logout(User $user): JsonResponse
+    {
+        $accessToken = $user->currentAccessToken();
+
+        if ($accessToken instanceof PersonalAccessToken) {
+            $accessToken->delete();
+        }
+
+        return response()->json(['message' => 'Logour realizado com sucesso.']);
+    }
+
+    public function me(User $user): UserResource
+    {
+        return new UserResource($user);
     }
 }

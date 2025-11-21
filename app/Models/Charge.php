@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -10,9 +11,12 @@ class Charge extends Model
     use HasFactory;
 
     protected $fillable = [
+        'user_id',
+        'patient_id',
+        'therapy_session_id',
         'amount',
         'status',
-        'due_date'
+        'due_date',
     ];
 
     protected $casts = [

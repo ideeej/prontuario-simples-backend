@@ -1,4 +1,5 @@
 <?php
+
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -9,9 +10,19 @@ return new class extends Migration
     {
         Schema::create('charges', function (Blueprint $table) {
             $table->id();
-            $table->decimal('amount', 10, 2);
-            $table->string('status')->default('pending'); // pending, paid, cancelled
+            $table->foreignId('user_id')->constrained();
+            $table->foreignId('patient_id')->constrained();
+
+            // Opcional: Vínculo com a sessão que gerou a cobrança
+            $table->foreignId('therapy_session_id')->nullable()->constrained();
+
+            // No banco fica salvo em centavos
+            $table->integer('amount');
+
+            // pending, paid, cancelled
+            $table->string('status')->default('pending');
             $table->date('due_date')->nullable();
+
             $table->timestamps();
         });
     }
