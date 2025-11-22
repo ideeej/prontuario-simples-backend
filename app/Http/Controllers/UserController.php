@@ -2,27 +2,27 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\LoginUserRequest;
 use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
 use App\Http\Resources\UserResource;
 use App\Models\User;
 use Exception;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Laravel\Sanctum\PersonalAccessToken;
 
 class UserController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request)
+    public function index()
     {
-        $users = User::orderByDesc('created_at')->paginate(10);
+        try {
+            $users = User::orderByDesc('created_at')->paginate(10);
 
-        return response()->json($users->toResourceCollection(), 200);
+            return response()->json($users->toResourceCollection(), 200);
+        } catch (Exception $e) {
+            return response()->json(['message' => $e->getMessage()], 500);
+        }
     }
 
     /**
@@ -80,41 +80,5 @@ class UserController extends Controller
         $user->delete();
 
         return response()->json(null, 204);
-    }
-
-    public function login(LoginUserRequest $request): JsonResponse
-    {
-        $data = $request->validated();
-        $user = User::where('email', $data['email'])->firstOrFail();
-
-        if (! $user || ! Hash::check($data['password'], $user->password)) {
-            return response()->json(['message' => 'Credenciais inválidas.'], 401);
-        }
-
-        // $user->tokens()->delete();
-
-        $token = $user->createToken('auth_token')->plainTextToken;
-
-        return response()->json([
-            'user' => $user->toResource(),
-            'access_token' => $token,
-            'token_type' => 'Bearer',
-        ], 200);
-    }
-
-    public function logout(User $user): JsonResponse
-    {
-        $accessToken = $user->currentAccessToken();
-
-        if ($accessToken instanceof PersonalAccessToken) {
-            $accessToken->delete();
-        }
-
-        return response()->json(['message' => 'Logour realizado com sucesso.']);
-    }
-
-    public function me(User $user): UserResource
-    {
-        return new UserResource($user);
     }
 }

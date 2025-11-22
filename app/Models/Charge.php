@@ -13,7 +13,6 @@ class Charge extends Model
     protected $fillable = [
         'user_id',
         'patient_id',
-        'therapy_session_id',
         'amount',
         'status',
         'due_date',

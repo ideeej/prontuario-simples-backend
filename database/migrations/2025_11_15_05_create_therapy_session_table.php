@@ -12,10 +12,9 @@ return new class extends Migration
             $table->id();
 
             $table->foreignId('user_id')->constrained();
-            $table->foreignId('patient_id')->constrained();
 
-            // Opcional: Vínculo com o agendamento (se veio de um)
             $table->foreignId('appointment_id')->nullable()->constrained();
+            $table->foreignId('charge_id')->nullable()->constrained();
 
             $table->dateTime('date'); // Data que ocorreu
             $table->text('notes')->nullable(); // Anotações da sessão

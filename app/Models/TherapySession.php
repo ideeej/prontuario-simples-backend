@@ -11,7 +11,7 @@ class TherapySession extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['user_id', 'patient_id', 'appointment_id', 'date', 'notes'];
+    protected $fillable = ['user_id', 'appointment_id', 'charge_id', 'date', 'notes'];
 
     protected $casts = [
         'date' => 'datetime',
@@ -29,7 +29,7 @@ class TherapySession extends Model
     /**
      * UMA sessão pertence a UM agendamento
      */
-    public function appointment(): BelongsTo
+    public function appointments(): BelongsTo
     {
         return $this->belongsTo(Appointment::class);
     }
@@ -37,7 +37,7 @@ class TherapySession extends Model
     /**
      * UMA sessão pertence a UMA cobrança
      */
-    public function charge(): BelongsTo
+    public function charges(): BelongsTo
     {
         return $this->belongsTo(Charge::class);
     }

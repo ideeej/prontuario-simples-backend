@@ -13,9 +13,6 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained();
             $table->foreignId('patient_id')->constrained();
 
-            // Opcional: Vínculo com a sessão que gerou a cobrança
-            $table->foreignId('therapy_session_id')->nullable()->constrained();
-
             // No banco fica salvo em centavos
             $table->integer('amount');
 

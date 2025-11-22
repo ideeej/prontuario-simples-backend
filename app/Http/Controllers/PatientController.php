@@ -3,8 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\StorePatientRequest;
-use App\Models\Patient;
-use App\Models\User;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -14,9 +12,10 @@ class PatientController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(User $user)
+    public function index(Request $request)
     {
         // Verifica se o usuário logado (Autenticado) está tentando ver os próprios pacientes
+        $user = Auth::user();
         if (Auth::id() !== $user->id) {
             // return response()->json($user->patients);
             return response()->json(['message' => 'Não autorizado'], 403);
@@ -30,8 +29,9 @@ class PatientController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(StorePatientRequest $request, User $user)
+    public function store(StorePatientRequest $request)
     {
+        $user = Auth::user();
         if (Auth::id() !== $user->id) {
             return response()->json(['message' => 'Não autorizado'], 403);
         }
@@ -53,11 +53,10 @@ class PatientController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(User $user, Patient $patient)
+    public function show(Request $request)
     {
-        if ($patient->user_id !== $user->id) {
-            return response()->json(['message' => 'Paciente não encontrado para este usuário.'], 404);
-        }
+        $user = Auth::user();
+        $patient = $user->patients()->findOrFail($user->id);
 
         if (Auth::id() !== $user->id) {
             return response()->json(['message' => 'Não autorizado ou Paciente não encontrado.'], 404);
@@ -69,9 +68,12 @@ class PatientController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Patient $patient)
+    public function update(Request $request)
     {
+        // Todo: create validated...
+        $user = Auth::user();
         $data = $request->all();
+        $patient = $user->patients()->findOrFail($data['patient_id']);
 
         if (Auth::id() !== $patient->user_id) {
             return response()->json(['message' => 'Não autorizado'], 403);
@@ -90,8 +92,12 @@ class PatientController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Patient $patient)
+    public function destroy(Request $request)
     {
+        $data = $request->all();
+        $user = Auth::user();
+        $patient = $user->patients()->findOrFail($data['patient_id']);
+
         if (Auth::id() !== $patient->user_id) {
             return response()->json(['message' => 'Não autorizado'], 403);
         }

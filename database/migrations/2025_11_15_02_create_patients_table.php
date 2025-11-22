@@ -12,7 +12,7 @@ return new class extends Migration
             $table->id();
 
             // Vínculo com o terapeuta
-            $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            $table->foreignId(column: 'user_id')->constrained()->onDelete('cascade');
 
             $table->string('name');
             $table->string('username')->unique();

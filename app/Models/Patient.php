@@ -27,4 +27,9 @@ class Patient extends Model
     {
         return 'username';
     }
+
+    public function therapySessions()
+    {
+        return $this->hasMany(TherapySession::class);
+    }
 }
