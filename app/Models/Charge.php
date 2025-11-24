@@ -23,9 +23,6 @@ class Charge extends Model
         'due_date' => 'date',
     ];
 
-    /**
-     * UMA cobrança pode ter VÁRIAS sessões
-     */
     public function therapySessions(): HasMany
     {
         return $this->hasMany(TherapySession::class);

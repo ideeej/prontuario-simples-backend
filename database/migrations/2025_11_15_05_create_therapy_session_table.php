@@ -16,7 +16,6 @@ return new class extends Migration
             $table->foreignId('appointment_id')->nullable()->constrained();
             $table->foreignId('charge_id')->nullable()->constrained();
 
-            $table->dateTime('date'); // Data que ocorreu
             $table->text('notes')->nullable(); // Anotações da sessão
             $table->text('transcription')->nullable(); // Transcrição automática
 

@@ -14,7 +14,6 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained(); // Dono (Terapeuta)
             $table->foreignId('patient_id')->constrained(); // Paciente
 
-            $table->dateTime('scheduled_at');
             $table->dateTime('start_date');
             $table->dateTime('end_date');
 

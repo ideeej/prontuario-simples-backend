@@ -1,6 +1,8 @@
 <?php
 
+use App\Http\Controllers\AppointmentsController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\ChargesController;
 use App\Http\Controllers\PatientController;
 use App\Http\Controllers\TherapySessionController;
 use App\Http\Controllers\UserController;
@@ -8,7 +10,7 @@ use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
-| Rotas Públicas (Autenticação)
+| Rotas Públicas
 |--------------------------------------------------------------------------
 */
 Route::prefix('auth')->group(function () {
@@ -18,7 +20,7 @@ Route::prefix('auth')->group(function () {
 
 /*
 |--------------------------------------------------------------------------
-| Rotas Protegidas (Requerem Autenticação)
+| Rotas Protegidas
 |--------------------------------------------------------------------------
 */
 Route::middleware('auth:sanctum')->group(function () {
@@ -30,7 +32,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/auth/me', [AuthController::class, 'me']);
 
     // ========================================
-    // Usuários (Admin)
+    // Usuários
     // ========================================
     Route::apiResource('users', UserController::class);
 
@@ -52,6 +54,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // GET    /sessions/{id}      -> Mostra UMA das MINHAS sessões
     // PUT    /sessions/{id}      -> Atualiza UMA das MINHAS sessões
     // DELETE /sessions/{id}      -> Remove UMA das MINHAS sessões
+
     // Ações específicas em sessões
     Route::post('/sessions/{session}/patients/{patient}', [TherapySessionController::class, 'attachPatient']);
     Route::delete('/sessions/{session}/patients/{patient}', [TherapySessionController::class, 'detachPatient']);
@@ -59,15 +62,28 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('sessions', TherapySessionController::class)->except(['post', 'delete']);
 
     // ========================================
-    // Relatórios e Estatísticas (Exemplos)
+    // Cobranças
     // ========================================
-    Route::get('/reports/sessions-summary', [TherapySessionController::class, 'summary']);
-    Route::get('/reports/patients-progress', [PatientController::class, 'progress']);
+    // GET    /charges           -> Lista MINHAS cobranças
+    // POST   /charges           -> Cria UMA cobrança para MIM
+    // GET    /charges/{id}      -> Mostra UMA das MINHAS cobranças
+    // PUT    /charges/{id}      -> Atualiza UMA das MINHAS cobranças
+    // DELETE /charges/{id}      -> Remove UMA das MINHAS cobranças
+    Route::apiResource('charges', ChargesController::class);
+    // ========================================
+    // Agendamentos
+    // ========================================
+    // GET    /appointments           -> Lista MEUS agendamentos
+    // POST   /appointments           -> Cria UM agendamento para MIM
+    // GET    /appointments/{id}      -> Mostra UM dos MEUS agendamentos
+    // PUT    /appointments/{id}      -> Atualiza UM dos MEUS agendamentos
+    // DELETE /appointments/{id}      -> Remove UM dos MEUS agendamentos
+    Route::apiResource('appointments', AppointmentsController::class);
 });
 
 /*
 |--------------------------------------------------------------------------
-| Exemplo de Rotas Admin (Opcional)
+| Rotas Admin
 |--------------------------------------------------------------------------
 */
 // Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function () {

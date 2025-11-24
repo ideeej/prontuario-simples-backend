@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\AuthUserUpdateRequest;
 use App\Http\Requests\LoginUserRequest;
 use App\Http\Requests\StoreUserRequest;
 use App\Models\User;
@@ -15,14 +16,9 @@ class AuthController extends Controller
 {
     public function register(StoreUserRequest $request): JsonResponse
     {
-        $data = $request->validated();
-
-        $data['password'] = Hash::make($data['password']);
-
-        // IMPORTANTE: Força role 'user' (segurança!)
-        $data['role'] = 'user';
-
         try {
+            $data = $request->validated();
+            $data['password'] = Hash::make($data['password']);
             $user = User::create($data);
 
             // Cria token para login automático após registro
@@ -39,14 +35,14 @@ class AuthController extends Controller
             return response()->json([
                 'message' => 'Falha ao registrar o usuário',
                 'error' => $e->getMessage(),
-            ], 500);
+            ], status: 400);
         }
     }
 
     public function login(LoginUserRequest $request): JsonResponse
     {
-        $data = $request->validated();
         try {
+            $data = $request->validated();
             $user = User::where('email', $data['email'])->firstOrFail();
             if (! $user || ! Hash::check($data['password'], $user->password)) {
                 throw new Exception;
@@ -64,21 +60,59 @@ class AuthController extends Controller
             return response()->json([
                 'message' => 'Falha ao registrar o usuário',
                 'error' => $e->getMessage(),
-            ], 500);
+            ], 400);
+        }
+    }
+
+    public function update(AuthUserUpdateRequest $request)
+    {
+        try {
+            $user = Auth::user();
+            $data = $request->validated();
+
+            if (isset($data['password'])) {
+                $data['password'] = Hash::make($data['password']);
+
+                $access_token = $user->currentAccessToken();
+
+                if ($access_token instanceof PersonalAccessToken) {
+                    $access_token->delete();
+                }
+            }
+
+            $user->update(attributes: $data);
+
+            return response()->json([
+                'message' => 'Informações do usuário alteradas com sucesso.',
+                'user' => $user->toResource(),
+            ], 200);
+        } catch (Exception $e) {
+            return response()->json([
+                'message' => 'Falha ao atualizar as informações do usuário.',
+                'error' => $e->getMessage(),
+            ]);
         }
     }
 
     public function me(): JsonResponse
     {
-        $user = Auth::user();
+        try {
+            $user = Auth::user();
 
-        return response()->json([
-            'user' => $user->toResource(),
-            'statistics' => [
-                'total_patients' => $user->patients()->count(),
-                'total_sessions' => $user->sessions()->count(),
-            ],
-        ]);
+            return response()->json([
+                'user' => $user->toResource(),
+                'statistics' => [
+                    'total_patients' => $user->patients()->count(),
+                    'total_sessions' => $user->sessions()->count(),
+                ],
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'message' => 'Falha mostrar usuário',
+                'error' => $e->getMessage(),
+            ], 400);
+        }
+
     }
 
     public function logout(): JsonResponse
@@ -86,9 +120,9 @@ class AuthController extends Controller
         // Pega o usuário autenticado
         $user = Auth::user();
 
-        // Revoga o token atual
         $token = $user->currentAccessToken();
 
+        // Revoga o token atual
         if ($token instanceof PersonalAccessToken) {
             $token->delete();
         }

@@ -11,11 +11,11 @@ class TherapySession extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['user_id', 'appointment_id', 'charge_id', 'date', 'notes'];
-
-    protected $casts = [
-        'date' => 'datetime',
-    ];
+    protected $fillable = [
+        'user_id',
+        'appointment_id',
+        'charge_id',
+        'notes'];
 
     /**
      * UMA sessão tem VÁRIOS pacientes (Many-to-Many)

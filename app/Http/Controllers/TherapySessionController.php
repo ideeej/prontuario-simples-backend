@@ -2,65 +2,53 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\TherapySession;
+use App\Http\Requests\StoreSessionRequest;
+use App\Http\Requests\UpdateSessionRequest;
 use Exception;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class TherapySessionController extends Controller
 {
-    /**
-     * Listar todas as sessões
-     */
     public function index()
     {
+        try {
+            $sessions = Auth::user()
+                ->sessions()
+                ->with(['patients', 'charges', 'appointments'])
+                ->get();
 
-        $sessions = Auth::user()
-            ->sessions()
-            ->with(['patients', 'charges', 'appointments'])->get();
+            return response()->json($sessions, 200);
+        } catch (Exception $e) {
+            return response()->json([
+                'message' => 'Falha ao mostrar as sessões',
+                'error' => $e->getMessage(),
+            ], 400);
+        }
 
-        return response()->json($sessions, 200);
     }
 
-    /**
-     * Criar nova sessão
-     */
-    public function store(Request $request)
+    public function store(StoreSessionRequest $request)
     {
-        $user = Auth::user();
-
-        if (Auth::id() !== $user->id) {
-            return response()->json(['message' => 'Não autorizado'], 403);
-        }
-
-        // Validação
-        $validated = $request->validate([
-            'patient_ids' => 'required|array|min:1', // Agora é array!
-            'patient_ids.*' => 'exists:patients,id',
-            'date' => 'required|date',
-            'notes' => 'required|string',
-            'appointment_id' => 'nullable|exists:appointments,id',
-            'charge_id' => 'nullable|exists:charges,id',
-        ]);
-
-        $patientIds = $validated['patient_ids'];
-        $userPatientIds = Auth::user()->patients()->pluck('id')->toArray();
-
-        $invalidIds = array_diff($patientIds, $userPatientIds);
-        if (! empty($invalidIds)) {
-            throw new Exception('Alguns pacientes não pertencem a você.');
-        }
-
         try {
+            $user = Auth::user();
+            $validated = $request->validated();
+            $patientIds = $validated['patient_ids'];
+            $userPatientIds = $user->patients()->pluck('id')->toArray();
+
+            $invalidIds = array_diff($patientIds, $userPatientIds);
+            if (! empty($invalidIds)) {
+                throw new Exception('Não autorizado.');
+            }
+
             DB::beginTransaction();
 
             $sessionData = $validated;
             unset($sessionData['patient_ids']);
 
-            $session = Auth::user()->sessions()->create($sessionData);
+            $session = $user->sessions()->create($sessionData);
 
-            // Associa os pacientes (Many-to-Many)
+            // Associa os pacientes
             $session->patients()->attach($patientIds);
 
             // Retornar com relações carregadas
@@ -80,63 +68,40 @@ class TherapySessionController extends Controller
         }
     }
 
-    /**
-     * Buscar sessão específica
-     */
     public function show()
     {
-        $user = Auth::user();
-        $therapySession = $user->sessions()->where('user_id', $user->id)->first();
         try {
+            $user = Auth::user();
+            $therapySession = $user->sessions()
+                ->where('user_id', $user->id)->first();
+
             $therapySession->load(['patients', 'appointments', 'charges']);
 
             return response()->json($therapySession, 200);
-
         } catch (Exception $e) {
             return response()->json([
-                'message' => 'Sessão não encontrada.',
+                'message' => 'Falha ao mostrar a sessão.',
+                'error' => $e->getMessage(),
             ], 404);
         }
     }
 
-    /**
-     * Atualizar sessão
-     */
-    public function update(Request $request)
+    public function update(UpdateSessionRequest $request)
     {
-        $user = Auth::user();
-        $therapySession = $user->sessions()->where('user_id', $user->id)->first();
-
-        if ($therapySession->user_id !== Auth::id()) {
-            return response()->json(['message' => 'Não autorizado'], 403);
-        }
-        $validated = $request->validate([
-            'therapy_record' => 'nullable|string',
-            'appointment_id' => 'nullable|exists:appointments,id',
-            'charge_id' => 'nullable|exists:charges,id',
-            'patient_ids' => 'nullable|array|min:1',
-            'patient_ids.*' => 'exists:patients,id',
-            'roles' => 'nullable|array',
-        ]);
-
         try {
+            $user = Auth::user();
+            $therapySession = $user->sessions()
+                ->where('user_id', $user->id)->first();
+            $validated = $request->validated();
+
             DB::beginTransaction();
 
             // Atualizar dados da sessão
             $therapySession->update([
-                'therapy_record' => $validated['therapy_record'] ?? $therapySession->therapy_record,
-                'appointment_id' => $validated['appointment_id'] ?? $therapySession->appointment_id,
-                'charge_id' => $validated['charge_id'] ?? $therapySession->charge_id,
+                'notes' => $validated['notes'] ?? $therapySession->notes,
             ]);
 
-            // Atualizar pacientes se fornecido
-            if (isset($validated['patient_ids'])) {
-                $therapySession->patients()->sync($validated['patient_ids']);
-            }
-
             DB::commit();
-
-            $therapySession->load(['patients', 'appointment', 'charge']);
 
             return response()->json($therapySession, 200);
 
@@ -144,20 +109,19 @@ class TherapySessionController extends Controller
             DB::rollBack();
 
             return response()->json([
-                'message' => 'Erro ao atualizar sessão.',
+                'message' => 'Falha ao atualizar sessão.',
                 'error' => $e->getMessage(),
             ], 400);
         }
     }
 
-    /**
-     * Deletar sessão
-     */
     public function destroy()
     {
-        $user = Auth::user();
-        $therapySession = $user->sessions()->where('user_id', $user->id)->first();
         try {
+            $user = Auth::user();
+            $therapySession = $user->sessions()
+                ->where('user_id', $user->id)->first();
+
             // O relacionamento pivot é deletado automaticamente (cascade)
             $therapySession->delete();
 
@@ -165,7 +129,7 @@ class TherapySessionController extends Controller
 
         } catch (Exception $e) {
             return response()->json([
-                'message' => 'Erro ao deletar sessão.',
+                'message' => 'Falha ao deletar sessão.',
             ], 400);
         }
     }
@@ -176,9 +140,9 @@ class TherapySessionController extends Controller
     public function attachPatient($sessionId, $patientId)
     {
         try {
-
-            $session = Auth::user()->sessions()->findOrFail($sessionId);
-            $patient = Auth::user()->patients()->findOrFail($patientId);
+            $user = Auth::user();
+            $session = $user->sessions()->findOrFail($sessionId);
+            $patient = $user->patients()->findOrFail($patientId);
 
             $session->patients()->attach($patient->id);
             $session->load(['patients', 'appointments', 'charges']);
@@ -196,22 +160,26 @@ class TherapySessionController extends Controller
         }
     }
 
-    /**
-     * Remover paciente de uma sessão
-     */
     public function detachPatient(string $sessionId, string $patientId)
     {
         try {
-            $session = TherapySession::findOrFail($sessionId);
-            $session->patients()->detach($patientId);
+            $user = Auth::user();
+            $session = $user->sessions()->findOrFail($sessionId);
+            $patient = $user->patients()->findOrFail($patientId);
+
+            $session->patients()->detach($patient->id);
 
             $session->load('patients');
 
-            return response()->json($session, 200);
+            return response()->json([
+                'message' => 'Paciente removido da sessão com sucesso.',
+                'session' => $session,
+            ], 200);
 
         } catch (Exception $e) {
             return response()->json([
                 'message' => 'Erro ao remover paciente.',
+                'error' => $e->getMessage(),
             ], 400);
         }
     }

@@ -13,20 +13,12 @@ class Appointment extends Model
     protected $fillable = [
         'user_id',
         'patient_id',
-        'scheduled_at',
         'start_date',
         'end_date',
         'status',
         'notes',
     ];
 
-    protected $casts = [
-        'scheduled_at' => 'datetime',
-    ];
-
-    /**
-     * UM agendamento pode ter VÁRIAS sessões
-     */
     public function therapySessions(): HasMany
     {
         return $this->hasMany(TherapySession::class);

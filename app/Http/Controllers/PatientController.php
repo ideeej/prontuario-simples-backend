@@ -3,112 +3,100 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\StorePatientRequest;
+use App\Http\Requests\UpdatePatientRequest;
 use Exception;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class PatientController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index(Request $request)
+    public function index()
     {
-        // Verifica se o usuário logado (Autenticado) está tentando ver os próprios pacientes
-        $user = Auth::user();
-        if (Auth::id() !== $user->id) {
-            // return response()->json($user->patients);
-            return response()->json(['message' => 'Não autorizado'], 403);
+        try {
+            $user = Auth::user();
 
+            return response()->json($user->patients);
+        } catch (Exception $e) {
+            return response()->json([
+                'message' => 'Falha ao mostrar os pacientes',
+                'error' => $e->getMessage(),
+            ], 400);
         }
 
-        // Retorna APENAS os pacientes associados àquele usuário (Terapeuta)
-        return response()->json($user->patients);
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(StorePatientRequest $request)
     {
-        $user = Auth::user();
-        if (Auth::id() !== $user->id) {
-            return response()->json(['message' => 'Não autorizado'], 403);
-        }
-
-        $data = $request->validated();
-
         try {
+            $user = Auth::user();
+            $data = $request->validated();
             $patient = $user->patients()->create($data);
 
-            return response()->json($patient, 201);
+            return response()->json([
+                'message' => 'Paciente criado com sucesso',
+                'patient' => $patient,
+            ], 201);
 
         } catch (Exception $e) {
-            dd($e);
-
-            return response()->json(['message' => 'Falha ao inserir o Paciente.'], 400);
+            return response()->json([
+                'message' => 'Falha ao criar Paciente',
+                'error' => $e->getMessage(),
+            ], 400);
         }
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(Request $request)
+    public function show($patientId)
     {
-        $user = Auth::user();
-        $patient = $user->patients()->findOrFail($user->id);
-
-        if (Auth::id() !== $user->id) {
-            return response()->json(['message' => 'Não autorizado ou Paciente não encontrado.'], 404);
-        }
-
-        return response()->json($patient);
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request)
-    {
-        // Todo: create validated...
-        $user = Auth::user();
-        $data = $request->all();
-        $patient = $user->patients()->findOrFail($data['patient_id']);
-
-        if (Auth::id() !== $patient->user_id) {
-            return response()->json(['message' => 'Não autorizado'], 403);
-        }
-
         try {
-            $patient->update($data);
+            $user = Auth::user();
+            $patient = $user->patients()->findOrFail($patientId);
 
             return response()->json($patient, 200);
-
         } catch (Exception $e) {
-            return response()->json(['message' => 'Falha ao atualizar o paciente'], 400);
+            return response()->json([
+                'message' => 'Falha ao mostrar o paciente',
+                'error' => $e->getMessage(),
+            ], 400);
+        }
+
+    }
+
+    public function update(UpdatePatientRequest $request, $patientId)
+    {
+        try {
+            $user = Auth::user();
+            $data = $request->validated();
+            $patient = $user->patients()->findOrFail($patientId);
+
+            $patient->update($data);
+
+            return response()->json([
+                'message' => 'Paciente atualizado com sucesso.',
+                'patient' => $patient,
+            ], 201);
+        } catch (Exception $e) {
+            return response()->json([
+                'message' => 'Falha ao atualizar o paciente',
+                'error' => $e->getMessage(),
+            ], 400);
         }
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(Request $request)
+    public function destroy($patientId)
     {
-        $data = $request->all();
-        $user = Auth::user();
-        $patient = $user->patients()->findOrFail($data['patient_id']);
-
-        if (Auth::id() !== $patient->user_id) {
-            return response()->json(['message' => 'Não autorizado'], 403);
-        }
-
         try {
+            $user = Auth::user();
+            $patient = $user->patients()->findOrFail($patientId);
+
             $patient->delete();
 
-            return response()->json(null, 204);
-
+            return response()->json([
+                'message' => 'Paciente removido com sucesso.',
+            ], 204);
         } catch (Exception $e) {
-            return response()->json(['message' => 'Falha ao remover o paciente'], 400);
+            return response()->json([
+                'message' => 'Falha ao remover o paciente',
+                'error' => $e->getMessage(),
+            ], 400);
         }
     }
 }
