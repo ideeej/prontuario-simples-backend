@@ -11,8 +11,9 @@ return new class extends Migration
         Schema::create('appointments', function (Blueprint $table) {
             $table->id();
 
-            $table->foreignId('user_id')->constrained(); // Dono (Terapeuta)
-            $table->foreignId('patient_id')->constrained(); // Paciente
+            $table->foreignId('user_id')->constrained('users')->onDelete('cascade'); // Terapeuta
+            $table->foreignId('patient_id')->nullable()->constrained('patients')->onDelete('cascade');
+            $table->foreignId('therapy_session_id')->nullable()->constrained('therapy_sessions')->onDelete('cascade');
 
             $table->dateTime('start_date');
             $table->dateTime('end_date');

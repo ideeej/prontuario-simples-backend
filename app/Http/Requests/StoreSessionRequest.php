@@ -22,8 +22,8 @@ class StoreSessionRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'patient_ids' => 'required|array|min:1',
-            'patient_ids.*' => 'exists:patients,id',
+            'patients_ids' => 'required|array|min:1',
+            'patients_ids.*' => 'exists:patients,id',
             'notes' => 'nullable|string',
         ];
     }

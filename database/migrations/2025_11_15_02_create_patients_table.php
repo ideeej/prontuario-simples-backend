@@ -11,8 +11,7 @@ return new class extends Migration
         Schema::create('patients', function (Blueprint $table) {
             $table->id();
 
-            // Vínculo com o terapeuta
-            $table->foreignId(column: 'user_id')->constrained()->onDelete('cascade');
+            $table->foreignId(column: 'user_id')->constrained('users')->onDelete('cascade');
 
             $table->string('name');
             $table->string('username')->unique();

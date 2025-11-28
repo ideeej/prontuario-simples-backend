@@ -11,10 +11,7 @@ return new class extends Migration
         Schema::create('therapy_sessions', function (Blueprint $table) {
             $table->id();
 
-            $table->foreignId('user_id')->constrained();
-
-            $table->foreignId('appointment_id')->nullable()->constrained();
-            $table->foreignId('charge_id')->nullable()->constrained();
+            $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
 
             $table->text('notes')->nullable(); // Anotações da sessão
             $table->text('transcription')->nullable(); // Transcrição automática

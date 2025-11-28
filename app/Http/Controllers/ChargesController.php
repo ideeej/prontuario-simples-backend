@@ -14,9 +14,9 @@ class ChargesController extends Controller
     {
         try {
             $user = Auth::user();
-            $charges = $user->charges()->with(['therapySessions'])->get();
+            $charges = $user->charges()->with(['patient', 'therapy_session'])->get();
 
-            return response()->json(['charges' => $charges], 200);
+            return response()->json($charges, 200);
         } catch (Exception $e) {
             return response()->json([
                 'message' => 'Falha ao mostrar suas cobranças',
@@ -35,7 +35,8 @@ class ChargesController extends Controller
 
             return response()->json([
                 'message' => 'Cobrança criada com sucesso!',
-                'charge' => $charge], 201);
+                'charge' => $charge,
+            ], 201);
         } catch (Exception $e) {
             return response()->json([
                 'message' => 'Falha ao criar nova cobrança',
@@ -86,10 +87,56 @@ class ChargesController extends Controller
             $charge = $user->charges()->findOrFail($id);
             $charge->delete();
 
-            return response()->json(null, 204);
+            return response()->json(['message' => 'Cobrança removida com sucesso.'], 204);
         } catch (Exception $e) {
             return response()->json([
                 'message' => 'Falha ao remover cobrança',
+                'error' => $e->getMessage(),
+            ], 400);
+        }
+    }
+
+    public function attachSession($chargeId, $sessionId)
+    {
+        try {
+            $user = Auth::user();
+            $charge = $user->charges()->findOrFail($chargeId);
+            $session = $user->sessions()->findOrFail($sessionId);
+
+            $charge->therapy_session_id = $session->id;
+            $charge->load(['therapy_session']);
+            $charge->save();
+
+            return response()->json([
+                'message' => 'Sessão associada à cobrança com sucesso.',
+                'session' => $charge,
+            ], 200);
+        } catch (Exception $e) {
+            return response()->json([
+                'message' => 'Erro ao incluir sessão à cobrança',
+                'error' => $e->getMessage(),
+            ], 400);
+        }
+    }
+
+    public function detachSession($chargeId, $sessionId)
+    {
+        try {
+            $user = Auth::user();
+            $charge = $user->charges()->findOrFail($chargeId);
+            $session = $user->sessions()->findOrFail($sessionId);
+
+            $charge->therapy_session_id = null;
+            $charge->load('therapy_session');
+            $charge->save();
+
+            return response()->json([
+                'message' => 'Agendamento removido da sessão com sucesso.',
+            ], 204);
+
+        } catch (Exception $e) {
+            return response()->json([
+                'message' => 'Erro ao remover sessão ao agendamento.',
                 'error' => $e->getMessage(),
             ], 400);
         }

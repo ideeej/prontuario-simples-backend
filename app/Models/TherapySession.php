@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class TherapySession extends Model
 {
@@ -13,32 +14,34 @@ class TherapySession extends Model
 
     protected $fillable = [
         'user_id',
-        'appointment_id',
-        'charge_id',
         'notes'];
 
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
     /**
-     * UMA sessão tem VÁRIOS pacientes (Many-to-Many)
+     * UMA sessão percente a um paciente
      */
     public function patients(): BelongsToMany
     {
-        return $this->belongsToMany(Patient::class)
-            ->withTimestamps();
+        return $this->belongsToMany(Patient::class);
     }
 
     /**
-     * UMA sessão pertence a UM agendamento
+     * UMA sessão tem UM agendamento
      */
-    public function appointments(): BelongsTo
+    public function appointment(): HasOne
     {
-        return $this->belongsTo(Appointment::class);
+        return $this->hasOne(Appointment::class);
     }
 
     /**
-     * UMA sessão pertence a UMA cobrança
+     * UMA sessão tem UMA cobrança
      */
-    public function charges(): BelongsTo
+    public function charge(): HasOne
     {
-        return $this->belongsTo(Charge::class);
+        return $this->hasOne(Charge::class);
     }
 }
